@@ -1,268 +1,238 @@
-# Document Viewer
+# Hive React Document Viewer
 
-A reusable React document viewer for **PDF** (normal and scanned/OCR), **DOCX**, and **PPTX** (via Office→PDF conversion). Uses only open-source libraries; high-fidelity rendering; portable API.
+A powerful React component for viewing **PDF**, **DOCX**, and **PPTX** documents. Features include thumbnail navigation, text search, zoom controls, fullscreen mode, and optional OCR support for scanned documents.
+
+[![npm version](https://img.shields.io/npm/v/hive-react-document-viewer.svg)](https://www.npmjs.com/package/hive-react-document-viewer)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Features
+
+- 📄 **PDF viewing** with high-fidelity rendering
+- 📑 **Thumbnail sidebar** with page navigation
+- 🔍 **Text search** with match highlighting
+- 🔎 **Zoom controls** (fit to page, zoom in/out)
+- 📥 **Download & Print** support
+- 🖥️ **Fullscreen mode**
+- 📝 **DOCX support** (rendered as HTML)
+- 📊 **PPTX support** (via PDF conversion)
+- 🔤 **OCR support** for scanned PDFs (via Tesseract.js)
+- 🎨 **Customizable theming**
 
 ## Installation
 
 ```bash
-npm install document-viewer react react-dom
+npm install hive-react-document-viewer
 ```
 
-Peer dependencies: `react`, `react-dom`. The viewer also depends on `react-pdf`, `mammoth`, `tesseract.js`, `dompurify`, `jszip` (see package.json).
+**Peer dependencies:** `react` and `react-dom` (>=16.8.0)
 
-## Usage
+## Quick Start
 
 ```tsx
-import { DocumentViewer } from "document-viewer";
+import { DocumentViewer } from "hive-react-document-viewer";
 
+function App() {
+  return (
+    <div style={{ height: "100vh" }}>
+      <DocumentViewer
+        src="/path/to/document.pdf"
+        mimeType="application/pdf"
+      />
+    </div>
+  );
+}
+```
+
+## Usage Examples
+
+### Basic PDF Viewer
+
+```tsx
+<DocumentViewer src="https://example.com/document.pdf" />
+```
+
+### With Options
+
+```tsx
 <DocumentViewer
-  src={urlOrBlobOrFile}
+  src={fileUrl}
   mimeType="application/pdf"
-  options={{ enableOCR: false, resolutionScale: 1.5, zoom: 1, conversionWorkerUrl: "http://localhost:3333/convert" }}
-  theme={{ primary: "#1a1a2e", textPrimary: "#eee" }}
-  onRetry={() => {}}
-  onConversionError={(err) => console.error(err)}
+  options={{
+    showToolbar: true,
+    showSidebar: true,
+    sidebarMode: "thumbnails",
+    resolutionScale: 2,
+    zoom: 1,
+  }}
 />
 ```
 
-## Local development
+### With Viewer API
 
-### Run the library + playground locally
+```tsx
+import { DocumentViewer, PdfViewerApi } from "hive-react-document-viewer";
 
-```bash
-# from repo root
-npm install
-npm run build
-cd playground
-npm install
-npm run dev
-```
+function App() {
+  const [viewerApi, setViewerApi] = useState<PdfViewerApi | null>(null);
 
-The playground serves a patched PDF.js worker at `/pdf.worker.js`. When integrating into your own app, make sure that file is available at the web root (see "PDF image quality" below).
-
-### Use this repo in another local app
-
-There are two easy ways to consume the local package from a separate project.
-
-**Option A: file dependency (recommended)**
-
-In your app’s `package.json`:
-
-```json
-{
-  "dependencies": {
-    "document-viewer": "file:../PDFViewer"
-  }
+  return (
+    <>
+      <button onClick={() => viewerApi?.scrollToPage(5)}>Go to Page 5</button>
+      <DocumentViewer
+        src="/document.pdf"
+        options={{
+          onViewerReady: setViewerApi,
+        }}
+      />
+    </>
+  );
 }
 ```
 
-Then:
+### File Upload
 
-```bash
-npm install
-```
+```tsx
+function App() {
+  const [file, setFile] = useState<File | null>(null);
 
-Whenever you change the library, rebuild it so your app picks up the latest `dist` output:
-
-```bash
-cd /path/to/PDFViewer
-npm run build
-```
-
-**Option B: npm link**
-
-```bash
-# in this repo
-npm run build
-npm link
-
-# in your app
-npm link document-viewer
-```
-
-If you use `npm link`, you still need to run `npm run build` after library changes.
-
-### Serve the PDF.js worker in your app
-
-The viewer expects a worker at `/pdf.worker.js`. Copy it into your app’s public folder on each build:
-
-```bash
-cp /path/to/PDFViewer/dist/pdf.worker.js /path/to/your-app/public/pdf.worker.js
-```
-
-If you see blurred images, ensure you’re serving the patched worker from this repo’s `dist` folder (see "PDF image quality" below).
-
-### Next.js + pnpm + monorepo
-
-If your app lives in a pnpm workspace, add the package using the workspace protocol.
-
-**1) Workspace setup**
-
-`pnpm-workspace.yaml` (at monorepo root):
-
-```yaml
-packages:
-  - "apps/*"
-  - "packages/*"
-```
-
-Put this repo at `packages/document-viewer` (or any workspace package folder), then run:
-
-```bash
-pnpm -w install
-```
-
-**2) Add to your Next app**
-
-`apps/your-next-app/package.json`:
-
-```json
-{
-  "dependencies": {
-    "document-viewer": "workspace:*"
-  }
+  return (
+    <>
+      <input
+        type="file"
+        accept=".pdf,.docx,.pptx"
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+      />
+      {file && <DocumentViewer src={file} />}
+    </>
+  );
 }
 ```
 
-Then:
+### Office Documents (DOCX/PPTX)
 
-```bash
-pnpm -w install
-```
+For DOCX/PPTX files, you can either render DOCX as HTML directly, or convert to PDF using a conversion endpoint:
 
-**3) Build the library**
-
-The app consumes `dist`, so build the library after changes:
-
-```bash
-pnpm -w --filter document-viewer build
-```
-
-You can optionally run it in watch mode (if you add a `dev` script) and keep your Next app running.
-
-**4) Serve the worker in Next**
-
-Copy the worker into your Next app’s `public` folder so it’s served at `/pdf.worker.js`:
-
-```bash
-cp packages/document-viewer/dist/pdf.worker.js apps/your-next-app/public/pdf.worker.js
-```
-
-You can automate this in your Next app’s `package.json`:
-
-```json
-{
-  "scripts": {
-    "dev": "pnpm -w --filter document-viewer build && cp ../../packages/document-viewer/dist/pdf.worker.js public/pdf.worker.js && next dev",
-    "build": "pnpm -w --filter document-viewer build && cp ../../packages/document-viewer/dist/pdf.worker.js public/pdf.worker.js && next build"
-  }
-}
+```tsx
+<DocumentViewer
+  src={officeFile}
+  options={{
+    conversionWorkerUrl: "https://your-api.com/convert",
+  }}
+  onConversionError={(err) => console.error("Conversion failed:", err)}
+/>
 ```
 
 ## Props
 
 | Prop | Type | Description |
 |------|------|-------------|
-| `src` | `string \| Blob \| File` | Document URL or file. |
-| `mimeType` | `string` (optional) | MIME type; inferred from URL/extension if omitted. |
-| `options` | `ViewerOptions` (optional) | See below. |
-| `theme` | `ViewerTheme` (optional) | Colors for container and default loading/error UI. |
-| `onRequestPdfConversion` | `(file, mimeType) => Promise<string>` (optional) | Callback to convert Office (DOCX/PPTX) to PDF URL. |
-| `onConversionError` | `(error: Error) => void` (optional) | Called when conversion fails (e.g. worker error). |
-| `onRetry` | `() => void` (optional) | When provided, error UI shows a "Retry" button that calls this. |
-| `className` | `string` (optional) | Extra class for the container. |
-| `style` | `React.CSSProperties` (optional) | Inline styles for the container. |
+| `src` | `string \| Blob \| File` | Document URL or file object |
+| `mimeType` | `string` | MIME type (auto-detected if omitted) |
+| `options` | `ViewerOptions` | Viewer configuration options |
+| `theme` | `ViewerTheme` | Theme customization |
+| `onRetry` | `() => void` | Retry callback (shows retry button on error) |
+| `onConversionError` | `(error: Error) => void` | Called when Office conversion fails |
+| `className` | `string` | Additional CSS class |
+| `style` | `CSSProperties` | Inline styles |
+
+## ViewerOptions
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `showToolbar` | `boolean` | `true` | Show the toolbar |
+| `showSidebar` | `boolean` | `true` | Show the thumbnail sidebar |
+| `sidebarMode` | `"none" \| "thumbnails" \| "outline" \| "both"` | `"thumbnails"` | Sidebar content |
+| `showSearch` | `boolean` | `true` | Show search in toolbar |
+| `showPrint` | `boolean` | `true` | Show print button |
+| `showFullscreen` | `boolean` | `true` | Show fullscreen button |
+| `zoom` | `number` | `1` | Zoom level multiplier |
+| `resolutionScale` | `number` | `1` | Canvas resolution scale (higher = sharper) |
+| `enableOCR` | `boolean` | `false` | Enable OCR for scanned PDFs |
+| `conversionWorkerUrl` | `string` | - | URL for Office→PDF conversion |
+| `viewerBackgroundColor` | `string` | `#525659` | Viewer background color |
+| `pageBackgroundColor` | `string` | `#ffffff` | Page background color |
+| `toolbarBackgroundColor` | `string` | - | Toolbar background color |
+| `onViewerReady` | `(api: PdfViewerApi) => void` | - | Callback with viewer API |
+| `onDownload` | `(src, mime) => void` | - | Custom download handler |
+| `onPrint` | `(src, mime) => void` | - | Custom print handler |
+| `onFullscreen` | `(el) => void` | - | Custom fullscreen handler |
+| `downloadFileName` | `string` | - | Custom download filename |
+
+## Viewer API
+
+The `onViewerReady` callback provides an API to control the viewer programmatically:
+
+```ts
+interface PdfViewerApi {
+  scrollToPage: (page: number) => void;
+  nextMatch: () => void;
+  prevMatch: () => void;
+}
+```
 
 ## Exports
 
-- `PdfToolbar` – standalone toolbar component used by the PDF renderer.
-- `PdfToolbarProps` – props type for `PdfToolbar`.
-- `PdfViewerApi` – API shape passed to `onViewerReady`.
-
-### ViewerOptions
-
-- **`enableOCR`** (boolean): Enable OCR overlay for scanned PDFs (Tesseract).
-- **`resolutionScale`** (number): PDF canvas scale factor (e.g. 1.5). Combined with `devicePixelRatio`. Higher values (e.g. 2–2.5) improve sharpness for image-heavy PDFs but use more memory.
-- **`showToolbar`** (boolean): Show the built-in PDF toolbar (page nav, zoom, actions). Default: `true`.
-- **`showSearch`** (boolean): Show the search input in the PDF toolbar. Default: `true`.
-- **`showPrint`** (boolean): Show the print button in the PDF toolbar. Default: `true`.
-- **`showFullscreen`** (boolean): Show the fullscreen button in the PDF toolbar. Default: `true`.
-- **`showSidebar`** (boolean): Show the left thumbnail sidebar in the PDF viewer. Default: `true`.
-- **`sidebarMode`** (`"none" | "thumbnails" | "outline" | "both"`): Sidebar content mode. Overrides `showSidebar` when provided. Default: `"thumbnails"`.
-- **`viewerBackgroundColor`** (string): Background color of the viewer area (outside the page).
-- **`pageBackgroundColor`** (string): Background color of the PDF page surface.
-- **`toolbarBackgroundColor`** (string): Background color of the toolbar.
-- **`zoom`** (number): Zoom multiplier for PDF (e.g. 1.5). Combined with `resolutionScale` and `devicePixelRatio`. Host can hold zoom state and pass it here; add +/- buttons that update `options.zoom`.
-- **`conversionWorkerUrl`** (string): URL of conversion worker. When set (non-empty after trim), Office files (DOCX/PPTX) are POSTed here (multipart `file`); response must be `application/pdf` body or JSON `{ url }`. Empty or whitespace-only is treated as not set.
-- **`onViewerReady`** (function): Provides an API to control the PDF viewer (e.g. `scrollToPage`). Signature: `(api) => void`.
-- **`onDownload`** (function): Callback when user clicks download in the toolbar. Signature: `(source, mimeType) => void`.
-- **`downloadFileName`** (string): File name used by the default download handler.
-- **`onPrint`** (function): Callback when user clicks print in the toolbar. Signature: `(source, mimeType) => void`.
-- **`onFullscreen`** (function): Callback when user clicks fullscreen in the toolbar. Signature: `(containerEl) => void`.
-- **`searchHighlightStyle`** (object): Inline style applied to search highlight spans (e.g. `{ backgroundColor: \"#ffe58f\" }`).
-- **`searchTextHighlightStyle`** (object): Alias of `searchHighlightStyle`.
-- **`searchHighlightClassName`** (string): Class name applied to search highlight spans. Default: `document-viewer-search-hit`.
-- **`searchActiveHighlightStyle`** (object): Inline style applied to active match spans on the active match page.
-- **`searchActiveHighlightClassName`** (string): Class name applied to active match spans. Default: `document-viewer-search-hit-active`.
-- **`highlightPageText`** (`"none" | "current" | "page" | "both"`): Highlight all text on the current page, a specific page, both, or none.
-- **`highlightPageNumber`** (number): Page number (1-based) to highlight when using `"page"` or `"both"`.
-- **`highlightPageTextStyle`** (object): Inline style applied to full-page text highlight spans.
-
-### ViewerTheme
-
-Optional theme for container and default loading/error UI: `primary`, `secondary`, `tertiary`, `textPrimary`, `textSecondary`, `textTertiary`, `disableThemeScrollbar`. When `theme` is not provided, default styles are used.
-
-## Conversion worker
-
-For DOCX/PPTX, you can either:
-
-1. Provide **`onRequestPdfConversion`**: your callback receives the file and returns a PDF URL.
-2. Set **`options.conversionWorkerUrl`**: the viewer POSTs the file to that URL and uses the PDF response.
-
-Worker contract: `POST /convert`, `multipart/form-data` field `file`, response `Content-Type: application/pdf` (raw PDF bytes) or JSON `{ "url": "https://..." }`. The viewer creates an object URL from the PDF bytes when needed and revokes it on unmount or when `src`/renderer changes.
-
-If conversion fails (network, CORS, 4xx/5xx, or empty response), the viewer shows a clear error (e.g. "Conversion failed: [message]") and calls **`onConversionError`** when provided. Provide **`onRetry`** to show a "Retry" button that re-triggers load/conversion.
-
-## PDF image quality
-
-- **Why some parts look pixelated:** Non-selectable content in a PDF is often embedded as raster images; sharpness is limited by (a) the resolution of that image inside the PDF and (b) the viewer’s render scale. Text stays sharp because it’s vector.
-- **Improving sharpness:** Increase **Resolution scale** (e.g. 2–2.5) for image-heavy pages; higher values use more memory. The viewer also enables high-quality canvas image smoothing where supported (e.g. Edge).
-- **Patched PDF.js:** We patch PDF.js to always enable image interpolation for embedded raster images (removes the blocky look when the PDF’s `Interpolate` flag is false). The patch is applied by `scripts/patch-pdfjs.js` (run on `postinstall` and before/after `build`). It also copies a patched worker to `playground/public/pdf.worker.js` and `dist/pdf.worker.js`.
-- **Worker packaging:** The viewer expects the worker at `/pdf.worker.js`. The build copies the patched worker to `dist/pdf.worker.js`. Ensure your app serves that file at the web root in production (e.g., copy it into your app’s `public/` folder).
-- **Browser:** Chrome often renders PDF.js canvas more consistently than Edge; if quality differs, try Chrome.
-- **Source PDF:** PDFs produced by “Microsoft Edge PDF Document” (or similar) may embed low-resolution images; quality is source-dependent and cannot be fixed entirely in the viewer.
-
-## PDF.js patch maintenance
-
-- **Current PDF.js version:** `pdfjs-dist@4.0.379` (via `react-pdf`).
-- **What’s patched:** `getImageSmoothingEnabled()` in `pdf.js` and the `Interpolate` flag handling in `pdf.worker.js` (forced to `true`).
-- **How to update:** After upgrading `react-pdf` or `pdfjs-dist`, re-run `npm install` (runs `postinstall`) and verify the patch is applied by running `node scripts/patch-pdfjs.js`. Re-test your blur cases and ensure `dist/pdf.worker.js` is deployed.
-
-## Loading and error UI
-
-- Loading: single loading state (e.g. "Loading…" or "Converting to PDF…" when waiting on conversion). Use class `document-viewer-loading` for host styling.
-- Error: single error component (message + optional Retry button when `onRetry` is set). Use class `document-viewer-error` for host styling.
-
-## PDF links
-
-External annotation links (http/https/mailto) open in a new browser tab by default. Internal PDF links (outline/anchors) continue to navigate within the document.
-
-## Playground
-
-```bash
-npm run build
-cd playground && npm install && npm run dev
+```tsx
+import {
+  DocumentViewer,
+  PdfToolbar,
+  registerRenderer,
+  getRenderer,
+  listRenderers,
+  type PdfViewerApi,
+  type PdfToolbarProps,
+  type ViewerOptions,
+  type ViewerTheme,
+} from "hive-react-document-viewer";
 ```
 
-Open the playground to try samples, file picker, options (OCR, resolution scale, conversion worker URL), and retry.
+## PDF.js Worker Setup
 
-## Scripts
+For optimal PDF rendering, serve the bundled PDF.js worker at `/pdf.worker.js`:
 
-- `npm run build` – build the library (tsup).
-- `npm run test` / `npm run test:ci` – unit tests (Vitest).
-- `npm run playground` – run playground (from repo root, if script exists).
-- `npm run worker` – run conversion worker (see `worker/README.md`).
+```bash
+# Copy from node_modules after install
+cp node_modules/hive-react-document-viewer/dist/pdf.worker.js public/pdf.worker.js
+```
+
+The package runs a postinstall script that patches PDF.js for better image quality.
+
+## Conversion Worker
+
+For DOCX/PPTX files, provide a conversion endpoint that accepts:
+
+- **Request:** `POST` with `multipart/form-data`, field `file`
+- **Response:** Either raw PDF bytes (`Content-Type: application/pdf`) or JSON `{ "url": "..." }`
+
+## Theming
+
+```tsx
+<DocumentViewer
+  src={file}
+  theme={{
+    primary: "#1a1a2e",
+    textPrimary: "#ffffff",
+  }}
+/>
+```
+
+## CSS Classes
+
+Style the viewer using these CSS classes:
+
+- `.document-viewer` - Main container
+- `.document-viewer-loading` - Loading state
+- `.document-viewer-error` - Error state
+- `.document-viewer-search-hit` - Search match highlight
+- `.document-viewer-search-hit-active` - Active search match
+
+## Browser Support
+
+- Chrome (recommended)
+- Firefox
+- Safari
+- Edge
 
 ## License
 
-MIT.
+MIT
