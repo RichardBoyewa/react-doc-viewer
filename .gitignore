@@ -6,3 +6,6 @@ build/
 *.log
 .idea/
 .vscode/
+
+# Sensitive/private files
+playground/public/samples/EFG_Investment_Opportunities_Meeting.pdf
