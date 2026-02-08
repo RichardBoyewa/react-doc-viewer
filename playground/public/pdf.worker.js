@@ -9169,7 +9169,7 @@ class PartialEvaluator {
     const imageMask = dict.get("IM", "ImageMask") || false;
     let imgData, args;
     if (imageMask) {
-      const interpolate = true;
+      const interpolate = dict.get("I", "Interpolate");
       const bitStrideLength = w + 7 >> 3;
       const imgArray = image.getBytes(bitStrideLength * h);
       const decode = dict.getArray("D", "Decode");
@@ -40642,7 +40642,7 @@ class PDFImage {
     }
     this.width = width;
     this.height = height;
-    this.interpolate = true;
+    this.interpolate = dict.get("I", "Interpolate");
     this.imageMask = dict.get("IM", "ImageMask") || false;
     this.matte = dict.get("Matte") || false;
     let bitsPerComponent = image.bitsPerComponent;

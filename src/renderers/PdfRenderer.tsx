@@ -131,9 +131,9 @@ const styles = {
     width: "100%",
   },
   viewerContentShift: (shift: number) => ({
-    transform: `translateX(${shift}px)`,
-    transition: "transform 0.2s ease",
-    width: "100%",
+    marginLeft: shift,
+    transition: "margin-left 0.2s ease",
+    width: shift ? `calc(100% - ${shift}px)` : "100%",
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
@@ -716,8 +716,23 @@ export function PdfRenderer({ src, originalSrc, mimeType, options }: RendererPro
                     const page = i + 1;
                     const active = page === currentPage;
                     return (
-                      <div key={page} onClick={() => scrollToPage(page)} style={{ cursor: "pointer", marginBottom: 4 }}>
-                        <div style={styles.sidebarThumb(active)}>
+                      <div
+                        key={page}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          scrollToPage(page);
+                        }}
+                        onClickCapture={(e) => {
+                          // Prevent any nested links from opening new tabs
+                          if ((e.target as HTMLElement).tagName === 'A') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
+                        style={{ cursor: "pointer", marginBottom: 4 }}
+                      >
+                        <div style={{ ...styles.sidebarThumb(active), pointerEvents: "none" }}>
                           <Thumbnail pageNumber={page} width={SIDEBAR_WIDTH - 24} />
                         </div>
                         <div style={styles.sidebarLabel(active)}>{page}</div>
