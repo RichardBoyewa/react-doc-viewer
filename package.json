@@ -1,5 +1,5 @@
 {
-  "name": "react-document-viewer",
+  "name": "hive-react-document-viewer",
   "version": "0.1.0",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
