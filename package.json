@@ -1,0 +1,50 @@
+{
+  "name": "document-viewer",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "scripts/patch-pdfjs.js"
+  ],
+  "scripts": {
+    "build": "node scripts/patch-pdfjs.js && tsup && node scripts/patch-pdfjs.js",
+    "test": "vitest",
+    "test:ci": "vitest run",
+    "playground": "cd playground && npm run dev",
+    "worker": "cd worker && node server.js",
+    "postinstall": "node scripts/patch-pdfjs.js"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "dependencies": {
+    "dompurify": "^3.0.9",
+    "mammoth": "^1.6.0",
+    "pdfjs-dist": "^4.0.379",
+    "react-pdf": "^7.7.0",
+    "tesseract.js": "^5.0.4"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
+    "@types/dompurify": "^3.0.5",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "jsdom": "^24.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.2",
+    "vitest": "^1.4.0"
+  }
+}
